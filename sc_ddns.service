@@ -1,0 +1,11 @@
+[Unit]
+Description=sc_ddns for aliyun < script >
+After=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/sc_ddns/environment
+ExecStart=/usr/bin/python3 /usr/local/bin/sc_ddns.py
+
+[Install]
+WantedBy=multi-user.target

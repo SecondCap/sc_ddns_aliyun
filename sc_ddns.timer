@@ -1,0 +1,9 @@
+[Unit]
+Description=sc_ddns for aliyun < timer >
+
+[Timer]
+OnUnitActiveSec=300s
+AccuracySec=1s
+
+[Install]
+WantedBy=timers.target
