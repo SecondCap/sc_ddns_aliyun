@@ -1,5 +1,6 @@
 [Unit]
 Description=sc_ddns for aliyun < timer >
+After=network-online.target
 
 [Timer]
 OnUnitActiveSec=300s
