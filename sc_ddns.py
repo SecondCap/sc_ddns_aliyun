@@ -115,7 +115,6 @@ class sc_real_ip:
         real_ip = self.get_real_ip4()
         if real_ip != self.__str_ipv4:
             self.__str_ipv4 = real_ip
-            self.__write_all_ip4()
             return True
         return False
 
@@ -123,7 +122,6 @@ class sc_real_ip:
         real_ip = self.get_real_ip6()
         if real_ip != self.__str_ipv6:
             self.__str_ipv6 = real_ip
-            self.__write_all_ip6()
             return True
         return False
 
@@ -154,12 +152,12 @@ class sc_real_ip:
         self.__str_ipv6 = f.readline().strip('\r\n\t ')
         f.close()
 
-    def __write_all_ip4(self):
+    def write_all_ip4(self):
         f = open(self.__ipv4_path, 'w')
         f.write(self.__str_ipv4.strip('\r\n\t ') + '\n')
         f.close()
 
-    def __write_all_ip6(self):
+    def write_all_ip6(self):
         f = open(self.__ipv6_path, 'w')
         f.write(self.__str_ipv6.strip('\r\n\t ') + '\n')
         f.close()
@@ -189,7 +187,9 @@ if __name__ == '__main__':
         os.getenv('access_key_id'), os.getenv('access_key_secret'))
     if False != ipv4_changed:
         sc_ddns.update_ddns_record_ipv4(os.getenv('prefix'), real_ip.get_ip4())
+        real_ip.write_all_ip4()
     if False != ipv6_changed:
         sc_ddns.update_ddns_record_ipv6(os.getenv('prefix'), real_ip.get_ip6())
+        real_ip.write_all_ip6()
 
     sys.exit(0)
