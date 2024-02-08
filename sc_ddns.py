@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import os, sys, requests
+import os, sys, getopt, requests
 
 from alibabacloud_alidns20150109.client import Client as alidns_client
 from alibabacloud_tea_openapi import models as tea_openapi_models
@@ -106,21 +106,31 @@ class sc_real_ip:
         self.__read_all_ip6()
 
     def get_real_ip4(self):
-        return requests.get('https://speed4.neu6.edu.cn/getIP.php').text
+        # 此函数用于获取公网IPv4地址，此处给出模板，可以自己实现
+        try:
+            return requests.get('https://speed4.neu6.edu.cn/getIP.php').text
+        except:
+            print("get ipv4 failed, please check url or network")
+            return "127.0.0.1"
 
     def get_real_ip6(self):
-        return requests.get('https://speed.neu6.edu.cn/getIP.php').text
+        # 此函数用于获取公网IPv6地址，此处给出模板，可以自己实现
+        try:
+            return requests.get('https://speed.neu6.edu.cn/getIP.php').text
+        except:
+            print("get ipv6 failed, please check url or network")
+            return "::1"
 
     def is_ip4_changed(self):
         real_ip = self.get_real_ip4()
-        if real_ip != self.__str_ipv4:
+        if (real_ip != self.__str_ipv4) and ("127.0.0.1" != real_ip):
             self.__str_ipv4 = real_ip
             return True
         return False
 
     def is_ip6_changed(self):
         real_ip = self.get_real_ip6()
-        if real_ip != self.__str_ipv6:
+        if (real_ip != self.__str_ipv6) and ("::1" != real_ip):
             self.__str_ipv6 = real_ip
             return True
         return False
@@ -164,25 +174,54 @@ class sc_real_ip:
 
 
 if __name__ == '__main__':
+    opt_flag_use_ipv4 = False
+    opt_flag_use_ipv6 = False
     ipv4_changed = False
     ipv6_changed = False
+
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], '?h46', ['ipv4', 'ipv6'])
+    except:
+        print("unknow opts")
+        sys.exit(-1)
+    
+    for opt, args in opts:
+        if ('-h' == opt) or ('-?' == opt):
+            sys.exit(0)
+        elif opt in ('-4', '--ipv4'):
+            opt_flag_use_ipv4 = True
+        elif opt in ('-6', '--ipv6'):
+            opt_flag_use_ipv6 = True
+
     real_ip = sc_real_ip()
-    if True != real_ip.is_ip4_changed():
-        print('IP4 NOT changed: ' + real_ip.get_ip4())
-    else:
-        ipv4_changed = True
-        print('IP4 changed: ' + real_ip.get_ip4())
 
-#     if True != real_ip.is_ip6_changed():
-    if True:
-        print('IP6 NOT changed: ' + real_ip.get_ip6())
-    else:
-        ipv6_changed = True
-        print('IP6 changed: ' + real_ip.get_ip6())
+    # 若没有指定使用IPv4或IPv6，默认更新全部
+    if (True != opt_flag_use_ipv4) and (True != opt_flag_use_ipv6):
+        opt_flag_use_ipv4 = True
+        opt_flag_use_ipv6 = True
 
-    if False == ipv4_changed and False == ipv6_changed:
+    # 若需要更新IPv4
+    if True == opt_flag_use_ipv4:
+        ipv4_changed = real_ip.is_ip4_changed()
+        if True != ipv4_changed:
+            print('IPv4 NOT changed: ' + real_ip.get_ip4())
+        else:
+            print('IPv4 changed: ' + real_ip.get_ip4())
+
+    # 若需要更新IPv6
+    if True == opt_flag_use_ipv6:
+        ipv6_changed = real_ip.is_ip6_changed()
+        if True != ipv6_changed:
+            print('IPv6 NOT changed: ' + real_ip.get_ip6())
+        else:
+            print('IPv6 changed: ' + real_ip.get_ip6())
+
+    # ip地址没有更改 or 不需要更新，反正不需要执行升级操作的，直接退出
+    if (False == ipv4_changed) and (False == ipv6_changed):
         sys.exit(0)
 
+    # 创建sc_ddns_records对象后，会与阿里云建立连接。
+    # 本着只建立必要连接的原则，在必须使用的情况下才建立连接
     sc_ddns = sc_ddns_records(
         os.getenv('access_key_id'), os.getenv('access_key_secret'))
     if False != ipv4_changed:
