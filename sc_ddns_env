@@ -4,3 +4,9 @@ access_key_secret=''
 domain_name=''
 prefix=''
 
+
+opnsense_domain=''
+opnsense_verify=''
+opnsense_key=''
+opnsense_secret=''
+

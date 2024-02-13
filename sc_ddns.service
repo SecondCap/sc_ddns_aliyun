@@ -1,6 +1,7 @@
 [Unit]
 Description=sc_ddns for aliyun < script >
 After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple

@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import os, sys, getopt, requests
+import os, sys, getopt, requests, json
 
 from alibabacloud_alidns20150109.client import Client as alidns_client
 from alibabacloud_tea_openapi import models as tea_openapi_models
@@ -96,6 +96,8 @@ class sc_real_ip:
         self.__ipv6_path = '/tmp/sc_ddns_ip6.tmp'
         self.__str_ipv4 = ''
         self.__str_ipv6 = ''
+        self.__real_ipv4_str = ''
+        self.__real_ipv6_str = ''
 
         if not os.path.isfile(self.__ipv4_path):
             self.__create_file(self.__ipv4_path, '127.0.0.1')
@@ -104,33 +106,56 @@ class sc_real_ip:
 
         self.__read_all_ip4()
         self.__read_all_ip6()
+        self.__get_firewall_status(os.getenv('opnsense_domain'))
+
+    def __get_firewall_status(self, url : str):
+        try:
+            a = '{}/api/diagnostics/interface/getInterfaceConfig'.format(url)
+            b = requests.get(a, verify = os.getenv('opnsense_verify'),
+                             auth = (os.getenv('opnsense_key'), os.getenv('opnsense_secret')),
+                             timeout = (5, 5)).text
+            c = json.loads(b)
+            d = c['pppoe0']['ipv4']
+            e = c['pppoe0']['ipv6']
+
+            for obj in d:
+                self.__real_ipv4_str = obj.get('ipaddr')
+
+            for obj in e:
+                if False != obj.get('deprecated'):
+                    continue
+                if False != obj.get('tentative'):
+                    continue
+                if False != obj.get('link-local'):
+                    continue
+                self.__real_ipv6_str = obj.get('ipaddr')
+
+        except:
+            print('get firewall ip status failed')
+            sys.exit(-1)
 
     def get_real_ip4(self):
         # 此函数用于获取公网IPv4地址，此处给出模板，可以自己实现
-        try:
-            return requests.get('https://speed4.neu6.edu.cn/getIP.php').text
-        except:
-            print("get ipv4 failed, please check url or network")
-            return "127.0.0.1"
+        if '' != self.__real_ipv4_str:
+            return self.__real_ipv4_str
+        return '127.0.0.1'
 
     def get_real_ip6(self):
         # 此函数用于获取公网IPv6地址，此处给出模板，可以自己实现
-        try:
-            return requests.get('https://speed.neu6.edu.cn/getIP.php').text
-        except:
-            print("get ipv6 failed, please check url or network")
-            return "::1"
+        if '' != self.__real_ipv6_str:
+            return self.__real_ipv6_str
+        return '::1'
 
     def is_ip4_changed(self):
         real_ip = self.get_real_ip4()
-        if (real_ip != self.__str_ipv4) and ("127.0.0.1" != real_ip):
+        if (real_ip != self.__str_ipv4) and ('127.0.0.1' != real_ip):
             self.__str_ipv4 = real_ip
             return True
         return False
 
     def is_ip6_changed(self):
         real_ip = self.get_real_ip6()
-        if (real_ip != self.__str_ipv6) and ("::1" != real_ip):
+        if (real_ip != self.__str_ipv6) and ('::1' != real_ip):
             self.__str_ipv6 = real_ip
             return True
         return False

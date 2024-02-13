@@ -9,7 +9,11 @@ fi
 
 
 install -p -D -o root -g root -m 0755 ./sc_ddns.py /usr/local/bin/
-install -p -D -o root -g root -m 0755 ./sc_ddns_env /etc/sc_ddns/environment
+install -p -D -o root -g root -m 0644 ./sc_ddns_env /etc/sc_ddns/environment
 install -p -D -o root -g root -m 0644 ./sc_ddns.service /etc/systemd/system/
 install -p -D -o root -g root -m 0644 ./sc_ddns.timer /etc/systemd/system/
 
+systemctl daemon-reload
+
+systemctl enable --now sc_ddns.service
+systemctl enable --now sc_ddns.timer
